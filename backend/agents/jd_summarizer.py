@@ -20,7 +20,7 @@ def summarize_job_description(text: str) -> dict:
         "You are an AI assistant tasked with analyzing a job description. Extract the following information "
         "and return it as a valid JSON object with these exact keys: 'title', 'summary', 'skills', "
         "'responsibilities', 'requirements', 'keywords'. Each value should be a string or a list of strings. "
-        "The 'summary' must be a concise, single-sentence overview (max 20 words) of the job role. "
+        "The 'summary' must be a concise, of the job role. "
         "If a field cannot be determined, use an appropriate default (e.g., 'Unknown Title' for title, "
         "empty list [] for lists). Do not include any additional text or Markdown formatting outside the JSON object.\n\n"
         "Job Description:\n" + text
