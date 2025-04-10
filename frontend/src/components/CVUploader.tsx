@@ -83,7 +83,7 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
     });
 
     try {
-      const response = await fetch(`https://accenturehackathon-h9qn.onrender.com/process-cvs/${jdId}`, {
+      const response = await fetch(`https://accenturehackathon-agcw.onrender.com/process-cvs/${jdId}`, {
         method: "POST",
         body: formData,
       });
