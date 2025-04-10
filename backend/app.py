@@ -1,11 +1,11 @@
-# filepath: /d:/hiring-ai-pilot-main/backend/app.py
 import os
 import logging
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from pdfminer.high_level import extract_text
 import docx
 from fastapi.middleware.cors import CORSMiddleware
-from agents.jd_summarizer import summarize_job_description
+from agents.jd_summarizer import summarize_job_description, process_cvs
+from typing import List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +16,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://192.168.1.119:8080"],  # Allow your frontend origin
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,19 +24,19 @@ app.add_middleware(
 
 @app.post("/process-jd/")
 async def process_job_description(file: UploadFile):
-    """Process an uploaded job description file and return structured data."""
-    # Supported file types
     supported_types = [
         "text/plain",
         "application/pdf",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
+    
     if file.content_type not in supported_types:
+        logger.warning(f"Unsupported file type: {file.content_type}")
         raise HTTPException(status_code=400, detail="Unsupported file format")
 
-    # Extract text based on file type
     try:
+        logger.info(f"Processing file: {file.filename} (type: {file.content_type})")
         if file.content_type == "text/plain":
             text = await file.read()
             text = text.decode("utf-8").strip()
@@ -49,13 +49,37 @@ async def process_job_description(file: UploadFile):
             doc = docx.Document(file.file)
             text = "\n".join([para.text for para in doc.paragraphs]).strip()
         else:
+            logger.error(f"Unexpected file type processed: {file.content_type}")
             raise HTTPException(status_code=400, detail="Unsupported file format")
     except Exception as e:
-        logger.error(f"Text extraction failed: {str(e)}")
+        logger.error(f"Text extraction failed for {file.filename}: {str(e)}")
         raise HTTPException(status_code=400, detail="Failed to extract text from file")
 
     if not text:
+        logger.warning(f"Empty content in file: {file.filename}")
         raise HTTPException(status_code=400, detail="File content is empty")
 
-    # Use the JD summarizer
-    return summarize_job_description(text)
+    try:
+        logger.info(f"Summarizing job description for file: {file.filename}")
+        jd_data, jd_id = summarize_job_description(text)
+        logger.info(f"Successfully processed JD ID: {jd_id}")
+        return {"jd_data": jd_data, "jd_id": jd_id}
+    except Exception as e:
+        logger.error(f"Failed to process job description: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/process-cvs/{jd_id}")
+async def process_candidate_cvs(jd_id: int, files: List[UploadFile] = File(...)):
+    try:
+        result = await process_cvs(jd_id, files)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to process CVs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
+
+    
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("Starting FastAPI application...")
+    uvicorn.run(app, host="0.0.0.0", port=64354)

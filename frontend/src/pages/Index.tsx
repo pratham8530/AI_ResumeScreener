@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import SidebarNav from "@/components/SidebarNav";
 import Header from "@/components/Header";
@@ -17,7 +17,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Filter, UserPlus, ArrowUpDown, Download } from "lucide-react";
+import { Mail, Filter, ArrowUpDown, Download } from "lucide-react";
 
 interface JobDescription {
   title: string;
@@ -42,13 +42,19 @@ interface MatchBreakdown {
   industryRelevance: number;
 }
 
+interface Education {
+  institution?: string;
+  degree?: string;
+  gpa?: string | number;
+}
+
 interface Candidate {
   id: number;
   name: string;
   email: string;
   phone: string;
   experience: number;
-  education: string;
+  education: Education;
   skills: string[];
   experienceDetails: ExperienceDetail[];
   matchScore: number;
@@ -68,154 +74,10 @@ interface Step {
   status: "complete" | "current" | "upcoming";
 }
 
-const mockJobDescription: JobDescription = {
-  title: "Senior React Developer",
-  summary: "We are looking for an experienced React developer with strong TypeScript skills to join our frontend team. The ideal candidate will have experience with modern React practices, state management, and building responsive UIs.",
-  skills: ["React", "TypeScript", "JavaScript", "HTML", "CSS", "Redux", "GraphQL", "Jest"],
-  responsibilities: [
-    "Build and maintain responsive web applications using React and TypeScript",
-    "Collaborate with design and backend teams",
-    "Write clean, reusable, and well-tested code",
-    "Optimize application performance",
-    "Participate in code reviews"
-  ],
-  requirements: [
-    "3+ years of experience with React",
-    "Strong TypeScript knowledge",
-    "Experience with state management libraries (Redux, Context API)",
-    "Understanding of REST APIs and GraphQL",
-    "BS in Computer Science or equivalent experience"
-  ],
-  keywords: ["React", "TypeScript", "Frontend", "UI/UX", "Web Development", "Single Page Applications"],
-  originalText: "Senior React Developer position available...",
-};
-
-const mockCandidates: Candidate[] = [
-  {
-    id: 1,
-    name: "Alex Johnson",
-    email: "alex.johnson@example.com",
-    phone: "+1 (555) 123-4567",
-    experience: 5,
-    education: "BS in Computer Science, Stanford University",
-    skills: ["React", "TypeScript", "Redux", "Node.js", "GraphQL", "Jest", "Webpack"],
-    experienceDetails: [
-      { company: "Tech Solutions Inc.", role: "Senior Frontend Developer", duration: "2020-Present" },
-      { company: "WebApp Co.", role: "React Developer", duration: "2018-2020" }
-    ],
-    matchScore: 92,
-    matchBreakdown: {
-      skills: 95,
-      experience: 90,
-      education: 95,
-      industryRelevance: 85
-    }
-  },
-  {
-    id: 2,
-    name: "Sam Rivera",
-    email: "sam.rivera@example.com",
-    phone: "+1 (555) 234-5678",
-    experience: 3,
-    education: "MS in Web Development, MIT",
-    skills: ["React", "JavaScript", "CSS", "HTML", "Redux", "Angular"],
-    experienceDetails: [
-      { company: "Frontend Masters", role: "React Developer", duration: "2021-Present" },
-      { company: "DevShop", role: "Junior Developer", duration: "2019-2021" }
-    ],
-    matchScore: 85,
-    matchBreakdown: {
-      skills: 80,
-      experience: 75,
-      education: 90,
-      industryRelevance: 95
-    }
-  },
-  {
-    id: 3,
-    name: "Taylor Chen",
-    email: "taylor.chen@example.com",
-    phone: "+1 (555) 345-6789",
-    experience: 7,
-    education: "BS in Software Engineering, UC Berkeley",
-    skills: ["JavaScript", "React", "Vue.js", "TypeScript", "GraphQL", "Node.js"],
-    experienceDetails: [
-      { company: "Global Tech", role: "Lead Frontend Developer", duration: "2019-Present" },
-      { company: "Startup Inc.", role: "Full-stack Developer", duration: "2016-2019" }
-    ],
-    matchScore: 80,
-    matchBreakdown: {
-      skills: 75,
-      experience: 95,
-      education: 85,
-      industryRelevance: 70
-    }
-  },
-  {
-    id: 4,
-    name: "Jordan Lee",
-    email: "jordan.lee@example.com",
-    phone: "+1 (555) 456-7890",
-    experience: 2,
-    education: "Bootcamp Graduate, Coding Academy",
-    skills: ["React", "JavaScript", "HTML", "CSS", "Bootstrap"],
-    experienceDetails: [
-      { company: "Small Agency", role: "Junior React Developer", duration: "2022-Present" }
-    ],
-    matchScore: 65,
-    matchBreakdown: {
-      skills: 60,
-      experience: 50,
-      education: 70,
-      industryRelevance: 85
-    }
-  },
-  {
-    id: 5,
-    name: "Robin Singh",
-    email: "robin.singh@example.com",
-    phone: "+1 (555) 987-6543",
-    experience: 4,
-    education: "MS in Computer Science, University of Washington",
-    skills: ["React", "TypeScript", "NextJS", "GraphQL", "TailwindCSS", "Jest"],
-    experienceDetails: [
-      { company: "Startup Innovation", role: "Frontend Lead", duration: "2021-Present" },
-      { company: "Agency X", role: "Frontend Developer", duration: "2019-2021" }
-    ],
-    matchScore: 88,
-    matchBreakdown: {
-      skills: 90,
-      experience: 85,
-      education: 88,
-      industryRelevance: 90
-    }
-  },
-  {
-    id: 6,
-    name: "Morgan Williams",
-    email: "morgan.williams@example.com",
-    phone: "+1 (555) 765-4321",
-    experience: 6,
-    education: "BS in Software Engineering, Georgia Tech",
-    skills: ["React", "JavaScript", "Redux", "CSS", "Node.js", "Express"],
-    experienceDetails: [
-      { company: "Enterprise Solutions", role: "Senior Developer", duration: "2020-Present" },
-      { company: "Tech Innovators", role: "Web Developer", duration: "2018-2020" }
-    ],
-    matchScore: 78,
-    matchBreakdown: {
-      skills: 85,
-      experience: 80,
-      education: 75,
-      industryRelevance: 70
-    }
-  }
-];
-
 const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const location = useLocation();
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);
+  const [jdId, setJdId] = useState<number | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [shortlistedCandidates, setShortlistedCandidates] = useState<Candidate[]>([]);
@@ -224,32 +86,14 @@ const Index = () => {
   const [shortlistThreshold, setShortlistThreshold] = useState(75);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [shortlistView, setShortlistView] = useState<"all" | "auto" | "manual">("all");
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const steps: Step[] = [
-    { 
-      id: 1, 
-      name: "Job Description", 
-      description: "Upload and analyze JD", 
-      status: jobDescription ? "complete" : "current" 
-    },
-    { 
-      id: 2, 
-      name: "Candidate Matching", 
-      description: "Upload and score CVs", 
-      status: jobDescription && candidates.length > 0 ? "complete" : jobDescription ? "current" : "upcoming" 
-    },
-    { 
-      id: 3, 
-      name: "Insights", 
-      description: "Visualize matches and Analyze data", 
-      status: candidates.length > 0 ? "complete" : "upcoming" 
-    },
-    { 
-      id: 4, 
-      name: "Shortlist", 
-      description: "Select and contact and Send Emails", 
-      status: candidates.length > 0 ? "current" : "upcoming" 
-    }
+    { id: 1, name: "Job Description", description: "Upload and analyze JD", status: jobDescription ? "complete" : "current" },
+    { id: 2, name: "Candidate Matching", description: "Upload and score CVs", status: jobDescription && candidates.length > 0 ? "complete" : jobDescription ? "current" : "upcoming" },
+    { id: 3, name: "Insights", description: "Visualize matches and Analyze data", status: candidates.length > 0 ? "complete" : "upcoming" },
+    { id: 4, name: "Shortlist", description: "Select and contact and Send Emails", status: candidates.length > 0 ? "current" : "upcoming" }
   ];
 
   const initialWeights: WeightItem[] = [
@@ -271,24 +115,26 @@ const Index = () => {
         if (shortlistView === "manual") return shortlistedCandidates.some(sc => sc.id === c.id);
         return true;
       });
-      
-      const sorted = filtered.sort((a, b) => {
-        return sortOrder === "desc" 
-          ? b.matchScore - a.matchScore 
-          : a.matchScore - b.matchScore;
-      });
-      
+      const sorted = filtered.sort((a, b) => (sortOrder === "desc" ? b.matchScore - a.matchScore : a.matchScore - b.matchScore));
       setFilteredCandidates(sorted);
     }
   }, [candidates, shortlistThreshold, sortOrder, shortlistView, shortlistedCandidates]);
 
-  const handleJdProcessed = (data: JobDescription) => {
+  const handleJdProcessed = (data: JobDescription, id: number) => {
     setJobDescription(data);
+    setJdId(id);
   };
 
-  const handleCVsProcessed = (data: Candidate[]) => {
-    setCandidates(data);
-    setFilteredCandidates(data);
+  const handleCVsProcessed = (data: { processed_cvs: Candidate[] }) => {
+    console.log("Handling processed CVs:", data);
+    if (data.processed_cvs && Array.isArray(data.processed_cvs)) {
+      setCandidates(data.processed_cvs);
+      setFilteredCandidates(data.processed_cvs);
+    } else {
+      console.warn("No valid candidates in response:", data);
+      setCandidates([]);
+      setFilteredCandidates([]);
+    }
   };
 
   const handleShortlistCandidate = (candidate: Candidate) => {
@@ -315,23 +161,8 @@ const Index = () => {
     console.log("Weights updated:", newWeights);
   };
 
-  const handleBulkEmail = () => {
-    alert(`Email will be sent to ${shortlistedCandidates.length} shortlisted candidates`);
-  };
-
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === "desc" ? "asc" : "desc");
-  };
-
-  const loadMockData = () => {
-    if (!jobDescription) {
-      setJobDescription(mockJobDescription);
-    }
-    
-    if (candidates.length === 0 && jobDescription) {
-      setCandidates(mockCandidates);
-      setFilteredCandidates(mockCandidates);
-    }
   };
 
   const autoShortlist = () => {
@@ -343,20 +174,21 @@ const Index = () => {
     alert(`Preparing to email all ${shortlistedCandidates.length} shortlisted candidates`);
   };
 
+  const proceedToCandidateMatching = () => {
+    navigate("/candidates");
+  };
+
   return (
     <div className="min-h-screen flex bg-background">
       <SidebarNav pathname={location.pathname} />
-      
       <div className="flex-1 flex flex-col pl-64">
-        <Header 
-          currentJobTitle={jobDescription ? jobDescription.title : "Upload a Job Description"} 
+        <Header
+          currentJobTitle={jobDescription ? jobDescription.title : "Upload a Job Description"}
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
         />
-        
         <div className="p-6 overflow-y-auto">
           {location.pathname !== "/settings" && <StepTimeline steps={steps} />}
-          
           <div className="mt-6">
             <AnimatePresence mode="wait">
               <Routes>
@@ -364,10 +196,9 @@ const Index = () => {
                   jobDescription ? (
                     <div className="space-y-4 animate-fade-in">
                       <JDPreviewCard jobDescription={jobDescription} />
-                      
                       <div className="mt-6 flex justify-end">
-                        <Button 
-                          onClick={() => {}} 
+                        <Button
+                          onClick={proceedToCandidateMatching}
                           className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                         >
                           Proceed to Candidate Matching
@@ -377,21 +208,9 @@ const Index = () => {
                   ) : (
                     <div className="space-y-4 animate-fade-in">
                       <JDUploader onJdProcessed={handleJdProcessed} />
-                      
-                      <div className="mt-4 text-center">
-                        <Button 
-                          variant="secondary"
-                          onClick={loadMockData} 
-                          className="px-4 py-2 text-sm"
-                        >
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Load Demo Data
-                        </Button>
-                      </div>
                     </div>
                   )
                 } />
-                
                 <Route path="/candidates" element={
                   candidates.length > 0 ? (
                     <div className="animate-fade-in space-y-6">
@@ -405,7 +224,7 @@ const Index = () => {
                         <div className="flex items-center gap-3">
                           <FeedbackTunerButton
                             weights={initialWeights}
-                            jobTitle={jobDescription?.title || mockJobDescription.title}
+                            jobTitle={jobDescription?.title || ""}
                             onWeightsChanged={handleWeightsChanged}
                           />
                           <Button
@@ -419,38 +238,30 @@ const Index = () => {
                           </Button>
                         </div>
                       </div>
-                      
-                      {candidates.map((candidate, index) => (
-                        <CandidateCard 
+                      {filteredCandidates.map((candidate, index) => (
+                        <CandidateCard
                           key={candidate.id}
                           candidate={candidate}
                           index={index}
-                          onEmailClick={handleEmailCandidate}
-                          onShortlistClick={handleShortlistCandidate}
-                          isShortlisted={shortlistedCandidates.some(c => c.id === candidate.id)}
+                          showActions={false} // No actions on Candidate Matching page
                         />
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-4 animate-fade-in">
-                      <CVUploader onCVsProcessed={handleCVsProcessed} />
-                      
-                      {jobDescription && (
-                        <div className="mt-4 text-center">
-                          <Button 
-                            variant="secondary"
-                            onClick={loadMockData} 
-                            className="px-4 py-2 text-sm"
-                          >
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Load Demo Candidates
-                          </Button>
-                        </div>
+                      {jdId ? (
+                        <CVUploader onCVsProcessed={handleCVsProcessed} jdId={jdId} />
+                      ) : (
+                        <p>Please upload a job description first.</p>
+                      )}
+                      {jdId && candidates.length === 0 && (
+                        <p className="text-center text-muted-foreground">
+                          No candidates processed yet. Upload CVs to see matches.
+                        </p>
                       )}
                     </div>
                   )
                 } />
-                
                 <Route path="/insights" element={
                   <div className="space-y-6">
                     <div className="mb-6 flex justify-between items-end">
@@ -462,35 +273,35 @@ const Index = () => {
                       </div>
                       <FeedbackTunerButton
                         weights={initialWeights}
-                        jobTitle={jobDescription?.title || mockJobDescription.title}
+                        jobTitle={jobDescription?.title || ""}
                         onWeightsChanged={handleWeightsChanged}
                       />
                     </div>
-                    <VisualInsights 
-                      candidates={candidates.length > 0 ? candidates : mockCandidates} 
-                      jobSkills={jobDescription ? jobDescription.skills : mockJobDescription.skills}
-                    />
+                    {candidates.length > 0 && jobDescription && (
+                      <VisualInsights
+                        candidates={candidates}
+                        jobSkills={jobDescription.skills}
+                      />
+                    )}
                   </div>
                 } />
-                
                 <Route path="/shortlist" element={
                   <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-start mb-6">
                       <div>
                         <h2 className="text-2xl font-bold mb-2">Candidate Shortlist</h2>
                         <p className="text-muted-foreground">
-                          {shortlistedCandidates.length} candidates shortlisted for {jobDescription?.title || mockJobDescription.title}
+                          {shortlistedCandidates.length} candidates shortlisted for {jobDescription?.title || ""}
                         </p>
                       </div>
-                      
                       <div className="flex items-center gap-3">
                         <FeedbackTunerButton
                           weights={initialWeights}
-                          jobTitle={jobDescription?.title || mockJobDescription.title}
+                          jobTitle={jobDescription?.title || ""}
                           onWeightsChanged={handleWeightsChanged}
                         />
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={emailAllShortlisted}
                           disabled={shortlistedCandidates.length === 0}
@@ -499,8 +310,8 @@ const Index = () => {
                           <Mail className="h-4 w-4" />
                           Email All
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => {}}
                           className="flex items-center gap-1.5"
@@ -510,7 +321,6 @@ const Index = () => {
                         </Button>
                       </div>
                     </div>
-                    
                     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                       <div className="xl:col-span-1">
                         <Card>
@@ -541,7 +351,6 @@ const Index = () => {
                                 <span>95% (Selective)</span>
                               </div>
                             </div>
-                            
                             <div className="pt-3">
                               <Button
                                 onClick={autoShortlist}
@@ -554,7 +363,6 @@ const Index = () => {
                                 Will shortlist {candidates.filter(c => c.matchScore >= shortlistThreshold).length} candidates with {shortlistThreshold}%+ match
                               </p>
                             </div>
-                            
                             <div className="pt-2">
                               <Tabs value={shortlistView} onValueChange={(value) => setShortlistView(value as "all" | "auto" | "manual")} className="w-full">
                                 <TabsList className="grid w-full grid-cols-3">
@@ -564,26 +372,24 @@ const Index = () => {
                                 </TabsList>
                               </Tabs>
                             </div>
-                            
-                            <div className="border-t pt-4 mt-4">
-                              <h3 className="text-sm font-medium mb-2">Job Requirements</h3>
-                              <div className="flex flex-wrap gap-1.5">
-                                {jobDescription ? jobDescription.skills.map((skill, idx) => (
-                                  <Badge key={idx} variant="outline">{skill}</Badge>
-                                )) : mockJobDescription.skills.map((skill, idx) => (
-                                  <Badge key={idx} variant="outline">{skill}</Badge>
-                                ))}
+                            {jobDescription && (
+                              <div className="border-t pt-4 mt-4">
+                                <h3 className="text-sm font-medium mb-2">Job Requirements</h3>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {jobDescription.skills.map((skill, idx) => (
+                                    <Badge key={idx} variant="outline">{skill}</Badge>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </CardContent>
                         </Card>
                       </div>
-                      
                       <div className="xl:col-span-3">
                         {filteredCandidates.length > 0 ? (
                           <div className="space-y-4">
                             {filteredCandidates.map((candidate, index) => (
-                              <CandidateCard 
+                              <CandidateCard
                                 key={candidate.id}
                                 candidate={candidate}
                                 index={index}
@@ -594,6 +400,7 @@ const Index = () => {
                                     : () => handleShortlistCandidate(candidate)
                                 }
                                 isShortlisted={shortlistedCandidates.some(c => c.id === candidate.id)}
+                                showActions={true} // Show actions on Shortlist page
                               />
                             ))}
                           </div>
@@ -603,33 +410,23 @@ const Index = () => {
                             <p className="text-muted-foreground mb-4">
                               Try adjusting the threshold or adding candidates to your shortlist
                             </p>
-                            <Button 
-                              onClick={() => setShortlistedCandidates([mockCandidates[0], mockCandidates[1]])} 
-                              variant="secondary"
-                              className="text-sm"
-                            >
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Load Demo Shortlist
-                            </Button>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                 } />
-                
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </AnimatePresence>
           </div>
         </div>
       </div>
-      
-      <EmailModal 
+      <EmailModal
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         candidate={selectedCandidate}
-        jobTitle={jobDescription?.title || mockJobDescription.title}
+        jobTitle={jobDescription?.title || ""}
       />
     </div>
   );

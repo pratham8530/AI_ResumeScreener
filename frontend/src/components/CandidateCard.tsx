@@ -1,4 +1,3 @@
-
 import { FC, useState } from 'react';
 import { ChevronDown, ChevronUp, Mail, Star, Clock, Award, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,13 +23,19 @@ interface MatchBreakdown {
   industryRelevance: number;
 }
 
+interface Education {
+  institution?: string;
+  degree?: string;
+  gpa?: string | number;
+}
+
 interface Candidate {
   id: number;
   name: string;
   email: string;
   phone: string;
   experience: number;
-  education: string;
+  education: Education;
   skills: string[];
   experienceDetails: ExperienceDetail[];
   matchScore: number;
@@ -40,9 +45,10 @@ interface Candidate {
 interface CandidateCardProps {
   candidate: Candidate;
   index: number;
-  onEmailClick: (candidate: Candidate) => void;
-  onShortlistClick: (candidate: Candidate) => void;
+  onEmailClick?: (candidate: Candidate) => void; // Optional since not always used
+  onShortlistClick?: (candidate: Candidate) => void; // Optional since not always used
   isShortlisted?: boolean;
+  showActions?: boolean; // New prop to control action buttons
 }
 
 const CandidateCard: FC<CandidateCardProps> = ({ 
@@ -50,14 +56,14 @@ const CandidateCard: FC<CandidateCardProps> = ({
   index,
   onEmailClick, 
   onShortlistClick,
-  isShortlisted = false
+  isShortlisted = false,
+  showActions = false, // Default to false
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  // Circle score background SVG
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (candidate.matchScore / 100) * circumference;
+  const strokeDashoffset = circumference - (Math.round(candidate.matchScore) / 100) * circumference;
   
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-accent';
@@ -104,7 +110,7 @@ const CandidateCard: FC<CandidateCardProps> = ({
                     />
                   </svg>
                   <span className={`text-2xl font-bold ${getScoreColor(candidate.matchScore)}`}>
-                    {candidate.matchScore}
+                    {Math.round(candidate.matchScore)}
                   </span>
                 </div>
                 <span className="absolute -top-2 -left-2 h-6 w-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-semibold">
@@ -135,24 +141,26 @@ const CandidateCard: FC<CandidateCardProps> = ({
             </div>
           </div>
           
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => onEmailClick(candidate)} 
-                   className="border border-primary/20 hover:bg-primary/5">
-              <Mail className="h-4 w-4 mr-2" />
-              Email
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={() => onShortlistClick(candidate)}
-              className={isShortlisted 
-                ? "bg-accent hover:bg-accent/90 text-accent-foreground" 
-                : "bg-primary hover:bg-primary/90 text-primary-foreground"}
-              variant={isShortlisted ? "default" : "default"}
-            >
-              <Star className="h-4 w-4 mr-2" />
-              {isShortlisted ? "Remove" : "Shortlist"}
-            </Button>
-          </div>
+          {showActions && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onEmailClick?.(candidate)} 
+                      className="border border-primary/20 hover:bg-primary/5">
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => onShortlistClick?.(candidate)}
+                className={isShortlisted 
+                  ? "bg-accent hover:bg-accent/90 text-accent-foreground" 
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"}
+                variant={isShortlisted ? "default" : "default"}
+              >
+                <Star className="h-4 w-4 mr-2" />
+                {isShortlisted ? "Remove" : "Shortlist"}
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
       
@@ -178,33 +186,33 @@ const CandidateCard: FC<CandidateCardProps> = ({
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm">Skills Match</span>
-                    <span className="text-sm font-medium">{candidate.matchBreakdown.skills}%</span>
+                    <span className="text-sm font-medium">{Math.round(candidate.matchBreakdown.skills)}%</span>
                   </div>
-                  <Progress value={candidate.matchBreakdown.skills} className="h-2" />
+                  <Progress value={Math.round(candidate.matchBreakdown.skills)} className="h-2" />
                 </div>
                 
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm">Experience Relevance</span>
-                    <span className="text-sm font-medium">{candidate.matchBreakdown.experience}%</span>
+                    <span className="text-sm font-medium">{Math.round(candidate.matchBreakdown.experience)}%</span>
                   </div>
-                  <Progress value={candidate.matchBreakdown.experience} className="h-2" />
+                  <Progress value={Math.round(candidate.matchBreakdown.experience)} className="h-2" />
                 </div>
                 
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm">Education Match</span>
-                    <span className="text-sm font-medium">{candidate.matchBreakdown.education}%</span>
+                    <span className="text-sm font-medium">{Math.round(candidate.matchBreakdown.education)}%</span>
                   </div>
-                  <Progress value={candidate.matchBreakdown.education} className="h-2" />
+                  <Progress value={Math.round(candidate.matchBreakdown.education)} className="h-2" />
                 </div>
                 
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm">Industry Relevance</span>
-                    <span className="text-sm font-medium">{candidate.matchBreakdown.industryRelevance}%</span>
+                    <span className="text-sm font-medium">{Math.round(candidate.matchBreakdown.industryRelevance)}%</span>
                   </div>
-                  <Progress value={candidate.matchBreakdown.industryRelevance} className="h-2" />
+                  <Progress value={Math.round(candidate.matchBreakdown.industryRelevance)} className="h-2" />
                 </div>
               </div>
               
@@ -243,9 +251,17 @@ const CandidateCard: FC<CandidateCardProps> = ({
                 <AccordionItem value="education" className="border-none">
                   <AccordionTrigger className="text-sm font-medium hover:no-underline hover:text-primary">Education</AccordionTrigger>
                   <AccordionContent>
-                    <div className="flex items-center mt-2">
+                    <div className="flex flex-col mt-2">
                       <Award className="h-5 w-5 mr-2 text-primary" />
-                      <p>{candidate.education}</p>
+                      {candidate.education.institution && (
+                        <p className="ml-7 text-sm">Institution: {candidate.education.institution}</p>
+                      )}
+                      {candidate.education.degree && (
+                        <p className="ml-7 text-sm">Degree: {candidate.education.degree}</p>
+                      )}
+                      {candidate.education.gpa && (
+                        <p className="ml-7 text-sm">GPA: {candidate.education.gpa}</p>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
