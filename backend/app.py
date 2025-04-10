@@ -16,7 +16,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],  # Temporary wildcard for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,7 +52,7 @@ async def process_job_description(file: UploadFile):
             logger.error(f"Unexpected file type processed: {file.content_type}")
             raise HTTPException(status_code=400, detail="Unsupported file format")
     except Exception as e:
-        logger.error(f"Text extraction failed for {file.filename}: {str(e)}")
+        logger.error(f"Text extraction failed for {file.filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to extract text from file")
 
     if not text:
@@ -65,21 +65,25 @@ async def process_job_description(file: UploadFile):
         logger.info(f"Successfully processed JD ID: {jd_id}")
         return {"jd_data": jd_data, "jd_id": jd_id}
     except Exception as e:
-        logger.error(f"Failed to process job description: {str(e)}")
+        logger.error(f"Failed to process job description: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/process-cvs/{jd_id}")
 async def process_candidate_cvs(jd_id: int, files: List[UploadFile] = File(...)):
+    logger.info(f"Starting CV processing for JD ID: {jd_id} with {len(files)} files")
     try:
         result = await process_cvs(jd_id, files)
+        logger.info(f"CV processing completed for JD ID: {jd_id}")
         return result
+    except HTTPException as e:
+        logger.error(f"HTTP error during CV processing: {str(e)}", exc_info=True)
+        raise
     except Exception as e:
-        logger.error(f"Failed to process CVs: {str(e)}")
+        logger.error(f"Unexpected error during CV processing: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-    
 
-    
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting FastAPI application...")
-    uvicorn.run(app, host="0.0.0.0", port=64354)
+    port = int(os.environ.get("PORT", 64354))  # Use Render's PORT env var
+    uvicorn.run(app, host="0.0.0.0", port=port)

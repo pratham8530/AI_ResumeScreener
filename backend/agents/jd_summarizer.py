@@ -115,6 +115,9 @@ def save_cv_to_db(jd_id: int, cv_data: dict, match_score: float, match_breakdown
         education = json.dumps(education)
     # Serialize experience_details as JSON
     experience_details_json = json.dumps(experience_details) if experience_details else "[]"
+    # Serialize field_of_study and industry to handle lists or dictionaries
+    field_of_study = json.dumps(cv_data['field_of_study']) if isinstance(cv_data['field_of_study'], (list, dict)) else cv_data['field_of_study']
+    industry = json.dumps(cv_data['industry']) if isinstance(cv_data['industry'], (list, dict)) else cv_data['industry']
     try:
         cursor.execute('''
             INSERT INTO cvs (
@@ -132,11 +135,11 @@ def save_cv_to_db(jd_id: int, cv_data: dict, match_score: float, match_breakdown
             json.dumps(cv_data['work_experience']),
             json.dumps(cv_data['certifications']),
             json.dumps(cv_data['projects']),
-            cv_data['field_of_study'],
-            cv_data['industry'],
+            field_of_study,  # Now serialized if it was a list or dict
+            industry,       # Now serialized if it was a list or dict
             match_score,
             json.dumps(match_breakdown),
-            experience_details_json  # Now serialized
+            experience_details_json
         ))
         conn.commit()
         logger.debug(f"CV saved with JD ID {jd_id} for {cv_data['name']}")
