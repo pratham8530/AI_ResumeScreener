@@ -82,7 +82,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
     });
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/process-jd/', {
+      const response = await fetch('https://accenturehackathon-h9qn.onrender.com/process-jd/', {
         method: 'POST',
         body: formData,
       });
