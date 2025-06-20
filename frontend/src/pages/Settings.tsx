@@ -67,8 +67,8 @@ const Settings = () => {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: "HR Recruiter",
-      email: "recruiter@accenture.com",
-      company: "Accenture",
+      email: "recruiter@Comp_Name.com",
+      company: "Comp_Name",
     },
   });
 

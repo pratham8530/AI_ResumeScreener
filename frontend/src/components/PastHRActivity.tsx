@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom"; // Added useNavigate
-import { motion } from "framer-motion"; // Corrected motion import
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ interface PastHRActivityProps {
 const COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9C27B0"];
 
 const PastHRActivity = ({ hrActivityHistory }: PastHRActivityProps) => {
-  const navigate = useNavigate(); // Added navigate function
+  const navigate = useNavigate();
 
   const cardVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.9 },
@@ -88,7 +88,7 @@ const PastHRActivity = ({ hrActivityHistory }: PastHRActivityProps) => {
   const statusData = getStatusDistribution();
 
   return (
-    <div className="p-6 bg-gradient-to-br from-indigo-100 to-purple-200 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className="p-6 bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 min-h-scree\">
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,63 +112,6 @@ const PastHRActivity = ({ hrActivityHistory }: PastHRActivityProps) => {
         </motion.div>
       ) : (
         <div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <Card className="bg-white dark:bg-gray-800 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-2xl text-indigo-600 dark:text-indigo-400">Overall Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <p className="text-gray-600 dark:text-gray-400">Total Sessions: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalSessions}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400">Total Shortlisted: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalShortlisted}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400">Total Processed: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalProcessed}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400">Avg Match Score: <span className="font-bold text-green-600 dark:text-green-400">{avgMatchScore}%</span></p>
-                  <p className="text-gray-600 dark:text-gray-400">Highest Match Score: <span className="font-bold text-green-600 dark:text-green-400">{highestMatchScore.toFixed(2)}%</span></p>
-                  <p className="text-gray-600 dark:text-gray-400">Top Skills: <span className="font-bold text-purple-700 dark:text-purple-300">{topSkills}</span></p>
-                </div>
-                <div className="col-span-2 flex items-center justify-center h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                        labelLine={false}
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                        <Label
-                          value="Candidate Status"
-                          position="center"
-                          className="text-gray-800 dark:text-gray-200 font-bold"
-                        />
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number, name: string) => [`${value} Candidates`, name]}
-                        contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.8)', color: '#fff', borderRadius: '5px' }}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        wrapperStyle={{ color: '#000000', fontSize: '14px', fontWeight: 'bold' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {hrActivityHistory.map((activity, index) => {
               const avgMatch = activity.shortlistedCandidates.length > 0
@@ -223,11 +166,68 @@ const PastHRActivity = ({ hrActivityHistory }: PastHRActivityProps) => {
               );
             })}
           </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8"
+          >
+            <Card className="bg-white dark:bg-gray-800 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-2xl text-indigo-600 dark:text-indigo-400">Overall Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <p className="text-gray-600 dark:text-gray-400">Total Sessions: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalSessions}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400">Total Shortlisted: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalShortlisted}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400">Total Processed: <span className="font-bold text-indigo-700 dark:text-indigo-300">{totalProcessed}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400">Avg Match Score: <span className="font-bold text-green-600 dark:text-green-400">{avgMatchScore}%</span></p>
+                  <p className="text-gray-600 dark:text-gray-400">Highest Match Score: <span className="font-bold text-green-600 dark:text-green-400">{highestMatchScore.toFixed(2)}%</span></p>
+                  <p className="text-gray-600 dark:text-gray-400">Top Skills: <span className="font-bold text-purple-700 dark:text-purple-300">{topSkills}</span></p>
+                </div>
+                <div className="col-span-2 flex items-center justify-center h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                        labelLine={false}
+                      >
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                        <Label
+                          value="Candidate Status"
+                          position="center"
+                          className="text-gray-800 dark:text-gray-200 font-bold"
+                        />
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number, name: string) => [`${value} Candidates`, name]}
+                        contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.8)', color: '#fff', borderRadius: '5px' }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        wrapperStyle={{ color: '#000000', fontSize: '14px', fontWeight: 'bold' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       )}
       <div className="mt-6 flex justify-end">
         <Button
-          onClick={() => navigate("/shortlist")} // Changed navigator to navigate
+          onClick={() => navigate("/shortlist")}
           className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-200"
         >
           Back to Shortlist

@@ -133,8 +133,6 @@ function calculateMatchScore(jdData, cvData) {
   }
 
   const quickSummary = `Candidate ${cvData.name} matches ${Math.round(finalScore * 100)}% with JD, strong in ${cvSkillsFlat.slice(0, 3).join(', ')}, but may need ${skillsGap.slice(0, 2).join(', ')}.`;
-
-  console.log('Final Score Components:', { skillsScore, educationScore, experienceScore, industryScore, projScore, certScore, keywordMatch, finalScore });
   return {
     overall_match: Math.round(finalScore * 100),
     skills_match: Math.round(skillsScore * 100),

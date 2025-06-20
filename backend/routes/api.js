@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-const { summarizeJobDescription, parseCV } = require('../utils/gemini');
-const { calculateMatchScore } = require('../utils/scoring');
+const { summarizeJobDescription } = require('../utils/gemini');
 const { extractText } = require('../middleware/fileHandler');
 const JobDescription = require('../models/JobDescription');
+const { calculateMatchScore } = require('../utils/scoring');
+const { parseCV } = require('../utils/gemini');
 const CV = require('../models/CV');
 const HRActivity = require('../models/HRActivity');
 
@@ -17,15 +18,25 @@ const supportedTypes = [
 ];
 
 router.post('/process-jd', upload.single('file'), async (req, res) => {
-  if (!req.file || !supportedTypes.includes(req.file.mimetype)) {
+  const { text } = req.body;
+  const file = req.file;
+
+  if (!file && !text?.trim()) {
+    return res.status(400).json({ detail: 'No file or text provided' });
+  }
+
+  if (file && !supportedTypes.includes(file.mimetype)) {
     return res.status(400).json({ detail: 'Unsupported file format' });
   }
 
   try {
-    const text = await extractText(req.file);
-    if (!text) throw new Error('File content is empty');
+    let jdText = text?.trim();
+    if (file) {
+      jdText = await extractText(file);
+    }
+    if (!jdText) throw new Error('No content provided');
 
-    const jdData = await summarizeJobDescription(text);
+    const jdData = await summarizeJobDescription(jdText);
     const jd = new JobDescription(jdData);
     await jd.save();
 
@@ -101,7 +112,6 @@ router.post('/process-cvs/:jdId', upload.array('files'), async (req, res) => {
         quick_analysis: scores.quick_analysis,
       });
       await cv.save();
-      console.log('Saved CV:', cv);
 
       processedCVs.push({
         id: cv._id,

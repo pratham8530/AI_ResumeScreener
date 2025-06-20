@@ -1,7 +1,8 @@
 import { FC, useState, useRef } from 'react';
-import { Upload, FileText, X, CheckCircle, Trash2 } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, Trash2, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 
 interface JDUploaderProps {
@@ -12,6 +13,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [jdText, setJdText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -60,8 +62,9 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const clearAllFiles = () => {
+  const clearAll = () => {
     setUploadedFiles([]);
+    setJdText('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -72,14 +75,26 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
   };
 
   const processJd = async () => {
-    if (uploadedFiles.length === 0) return;
+    if (uploadedFiles.length === 0 && !jdText.trim()) {
+      toast({
+        title: "No input provided",
+        description: "Please upload a file or paste a job description.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsProcessing(true);
 
     const formData = new FormData();
-    uploadedFiles.forEach(file => {
-      formData.append('file', file);
-    });
+    if (uploadedFiles.length > 0) {
+      uploadedFiles.forEach(file => {
+        formData.append('file', file);
+      });
+    }
+    if (jdText.trim()) {
+      formData.append('text', jdText);
+    }
 
     try {
       const response = await fetch('http://localhost:8000/api/process-jd', {
@@ -98,6 +113,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
         title: "JD Processed",
         description: "Job description successfully analyzed.",
       });
+      clearAll();
     } catch (error: any) {
       console.error('Error processing JD:', error);
       toast({
@@ -114,7 +130,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
     <div className="animate-fade-in">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Job Description Upload</h2>
-        <p className="text-muted-foreground">Upload a job description to start the matching process</p>
+        <p className="text-muted-foreground">Upload or paste a job description to start matching</p>
       </div>
 
       <Card className={`border-2 border-dashed transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border'}`}
@@ -122,46 +138,54 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <CardContent className="p-8 flex flex-col items-center justify-center text-center">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Upload className="h-8 w-8 text-primary" />
+        <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Upload className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">Upload Job Description</h3>
+          <h3 className="text-lg font-semibold mb-2">Upload or Paste Job Description</h3>
           <p className="text-muted-foreground mb-4 max-w-md">
-            Drag and drop your file here, or click the button below to browse files
+            Drag and drop a file, click to browse, or paste the JD text below
           </p>
 
-          <div className="flex items-center gap-4">
-            <Button onClick={triggerFileInput}>
-              <FileText className="mr-2 h-4 w-4" />
-              Browse Files
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".txt,.pdf,.doc,.docx"
-              className="hidden"
-              onChange={handleFileChange}
-              multiple={false}
+          <div className="w-full max-w-md space-y-4">
+            <Textarea
+              placeholder="Paste job description here..."
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              className="min-h-[100px] resize-y"
             />
-            <div className="text-xs text-muted-foreground">
-              Supported formats: .txt, .pdf, .doc, .docx
+            <div className="flex items-center justify-between">
+              <Button onClick={triggerFileInput}>
+                <FileText className="mr-2 h-4 w-4" />
+                Browse Files
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.pdf,.doc,.docx"
+                className="hidden"
+                onChange={handleFileChange}
+                multiple={false}
+              />
+              <p className="text-xs text-muted-foreground">
+                Supports: .txt, .pdf, .doc, .docx
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {uploadedFiles.length > 0 && (
+      {(uploadedFiles.length > 0 || jdText.trim()) && (
         <div className="mt-6 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="font-medium">Uploaded File ({uploadedFiles.length})</h3>
-            <Button variant="ghost" size="sm" onClick={clearAllFiles}>
+            <h3 className="font-medium">Input Summary</h3>
+            <Button variant="ghost" size="sm" onClick={clearAll}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear
+              Clear All
             </Button>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto border border-border rounded-md divide-y">
+          <div className="border border-border rounded-md divide-y">
             {uploadedFiles.map((file, index) => (
               <div key={index} className="p-3 flex justify-between items-center">
                 <div className="flex items-center">
@@ -176,6 +200,20 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
                 </Button>
               </div>
             ))}
+            {jdText.trim() && (
+              <div className="p-3 flex justify-between items-center">
+                <div className="flex items-center">
+                  <Type className="h-5 w-5 mr-2 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Pasted Job Description</p>
+                    <p className="text-xs text-muted-foreground">{jdText.length} characters</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setJdText('')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end">

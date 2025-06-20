@@ -62,7 +62,7 @@ const EmailModal: FC<EmailModalProps> = ({ isOpen, onClose, candidate, jobTitle 
       subject: `Interview Invitation: ${jobTitle} Position`,
       content: `Dear ${candidate?.name},
 
-I hope this email finds you well. Thank you for your application for the ${jobTitle} position at Accenture.
+I hope this email finds you well. Thank you for your application for the ${jobTitle} position at Comp_Name.
 
 We were impressed with your background and qualifications, and we would like to invite you to an interview to discuss your application further. Your skills and experience appear to be a strong match for our requirements (${candidate?.matchScore}% match with our criteria).
 
@@ -72,7 +72,7 @@ I look forward to speaking with you soon.
 
 Best regards,
 Recruitment Team
-Accenture`
+Comp_Name`
     },
     {
       id: 'technical',
@@ -80,7 +80,7 @@ Accenture`
       subject: `Technical Assessment for ${jobTitle} Role`,
       content: `Dear ${candidate?.name},
 
-Thank you for applying to the ${jobTitle} position at Accenture. We've reviewed your application and are impressed with your qualifications.
+Thank you for applying to the ${jobTitle} position at Comp_Name. We've reviewed your application and are impressed with your qualifications.
 
 As the next step in our hiring process, we would like to invite you to complete a technical assessment to better evaluate your technical skills relevant to this role. Your profile shows a strong match (${candidate?.matchScore}%) with our requirements.
 
@@ -90,15 +90,15 @@ Please complete the assessment within the next 5 days. If you have any questions
 
 Best regards,
 Technical Hiring Team
-Accenture`
+Comp_Name`
     },
     {
       id: 'followup',
       name: 'Interview Follow-up',
-      subject: `Next Steps: ${jobTitle} Position at Accenture`,
+      subject: `Next Steps: ${jobTitle} Position at Comp_Name`,
       content: `Dear ${candidate?.name},
 
-Thank you for taking the time to interview for the ${jobTitle} position at Accenture. We appreciate your interest in joining our team.
+Thank you for taking the time to interview for the ${jobTitle} position at Comp_Name. We appreciate your interest in joining our team.
 
 We were impressed with your experience and the skills you've demonstrated throughout our selection process. Your profile shows a strong match (${candidate?.matchScore}%) with what we're looking for.
 
@@ -110,15 +110,15 @@ Looking forward to speaking with you again soon.
 
 Best regards,
 Recruitment Team
-Accenture`
+Comp_Name`
     },
     {
       id: 'offer',
       name: 'Job Offer',
-      subject: `Job Offer: ${jobTitle} at Accenture`,
+      subject: `Job Offer: ${jobTitle} at Comp_Name`,
       content: `Dear ${candidate?.name},
 
-I am delighted to offer you the position of ${jobTitle} at Accenture. Your impressive background, skills, and interview performance (${candidate?.matchScore}% match score) have convinced us that you would be a valuable addition to our team.
+I am delighted to offer you the position of ${jobTitle} at Comp_Name. Your impressive background, skills, and interview performance (${candidate?.matchScore}% match score) have convinced us that you would be a valuable addition to our team.
 
 Attached to this email, you will find the formal offer letter with details regarding:
 - Compensation and benefits package
@@ -129,11 +129,11 @@ To accept this offer, please sign the attached documents and return them to us b
 
 If you have any questions about the offer or need any clarification, please don't hesitate to contact me directly.
 
-Congratulations again! We are excited about the possibility of you joining Accenture and look forward to your positive response.
+Congratulations again! We are excited about the possibility of you joining Comp_Name and look forward to your positive response.
 
 Best regards,
 Recruitment Team
-Accenture`
+Comp_Name`
     }
   ];
 

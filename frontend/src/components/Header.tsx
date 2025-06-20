@@ -84,7 +84,7 @@ const Header: FC<HeaderProps> = ({
               </div>
               <div className="ml-2">
                 <p className="text-sm font-medium">Recruiter</p>
-                <p className="text-xs text-muted-foreground">Accenture</p>
+                <p className="text-xs text-muted-foreground">Comp_Name</p>
               </div>
             </div>
           </DropdownMenuTrigger>
