@@ -4,10 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+interface Skill {
+  skill: string;
+  variants: string[];
+}
+
 interface JobDescription {
   title: string;
   summary: string;
-  skills: string[];
+  skills: Skill[];
   responsibilities: string[];
   requirements: string[];
   keywords: string[];
@@ -22,7 +27,7 @@ interface JDPreviewCardProps {
 const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(jobDescription.summary);
-  
+
   const handleSaveEdit = () => {
     setIsEditing(false);
     if (onEdit) {
@@ -35,12 +40,10 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
 
   const renderHighlightedText = (text: string) => {
     let highlightedText = text;
-    
     jobDescription.keywords.forEach(keyword => {
       const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
       highlightedText = highlightedText.replace(regex, match => `<span class="highlight-keyword">${match}</span>`);
     });
-    
     return <div dangerouslySetInnerHTML={{ __html: highlightedText }} />;
   };
 
@@ -68,7 +71,7 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs defaultValue="summary">
             <TabsList className="mb-4">
@@ -78,7 +81,7 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
               <TabsTrigger value="requirements">Requirements</TabsTrigger>
               <TabsTrigger value="original">Original</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="summary" className="p-4 bg-muted/20 rounded-md">
               {isEditing ? (
                 <textarea
@@ -90,20 +93,20 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
                 renderHighlightedText(jobDescription.summary)
               )}
             </TabsContent>
-            
+
             <TabsContent value="skills">
               <div className="p-4 bg-muted/20 rounded-md">
                 <h3 className="font-medium mb-3">Required Skills</h3>
-                <div className="flex flex-wrap">
-                  {jobDescription.skills.map((skill, index) => (
-                    <span key={index} className="skill-tag">
-                      {skill}
+                <div className="flex flex-wrap gap-2">
+                  {jobDescription.skills.map((skillObj, index) => (
+                    <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                      {skillObj.skill}
                     </span>
                   ))}
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="responsibilities">
               <div className="p-4 bg-muted/20 rounded-md">
                 <h3 className="font-medium mb-3">Responsibilities</h3>
@@ -114,7 +117,7 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
                 </ul>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="requirements">
               <div className="p-4 bg-muted/20 rounded-md">
                 <h3 className="font-medium mb-3">Requirements</h3>
@@ -125,7 +128,7 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
                 </ul>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="original">
               <div className="p-4 bg-muted/20 rounded-md max-h-[300px] overflow-y-auto">
                 <pre className="whitespace-pre-wrap text-sm">
@@ -136,16 +139,16 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
           </Tabs>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Extracted Keywords</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="p-3 bg-muted/20 rounded-md">
-            <div className="flex flex-wrap">
+            <div className="flex flex-wrap gap-2">
               {jobDescription.keywords.map((keyword, index) => (
-                <span key={index} className="px-3 py-1 rounded-full text-xs font-medium border border-primary/20 text-primary bg-primary/5 m-1 inline-flex items-center">
+                <span key={index} className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm">
                   {keyword}
                 </span>
               ))}

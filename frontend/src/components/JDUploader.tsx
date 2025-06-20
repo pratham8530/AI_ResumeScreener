@@ -3,9 +3,8 @@ import { Upload, FileText, X, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-
 interface JDUploaderProps {
-  onJdProcessed: (data: any, id: number) => void;
+  onJdProcessed: (data: any, id: string) => void;
 }
 
 const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
@@ -82,7 +81,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
     });
 
     try {
-      const response = await fetch('https://accenturehackathon-k0z4.onrender.com/process-jd/', {
+      const response = await fetch('http://localhost:8000/api/process-jd', {
         method: 'POST',
         body: formData,
       });

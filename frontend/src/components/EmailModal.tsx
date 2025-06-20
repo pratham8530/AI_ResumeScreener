@@ -29,7 +29,15 @@ interface Candidate {
 interface EmailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  candidate: Candidate | null;
+  candidate: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    experience: number;
+    skills: string[];
+    matchScore: number;
+  } | null;
   jobTitle: string;
 }
 

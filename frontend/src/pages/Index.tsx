@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import axios from "axios";
 import SidebarNav from "@/components/SidebarNav";
 import Header from "@/components/Header";
 import StepTimeline from "@/components/StepTimeline";
@@ -8,7 +9,6 @@ import JDUploader from "@/components/JDUploader";
 import JDPreviewCard from "@/components/JDPreviewCard";
 import CVUploader from "@/components/CVUploader";
 import CandidateCard from "@/components/CandidateCard";
-import VisualInsights from "@/components/VisualInsights";
 import EmailModal from "@/components/EmailModal";
 import FeedbackTunerButton from "@/components/FeedbackTunerButton";
 import Settings from "./Settings";
@@ -19,14 +19,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Filter, ArrowUpDown, Download } from "lucide-react";
 
+interface Skill {
+  skill: string;
+  variants: string[];
+}
+
 interface JobDescription {
   title: string;
   summary: string;
-  skills: string[];
+  skills: Skill[];
   responsibilities: string[];
   requirements: string[];
   keywords: string[];
   originalText: string;
+  _id: string; // Added for MongoDB ID
 }
 
 interface ExperienceDetail {
@@ -40,6 +46,16 @@ interface MatchBreakdown {
   experience: number;
   education: number;
   industryRelevance: number;
+  projects: number;
+  certifications: number;
+  keywordMatch: number;
+}
+
+interface QuickAnalysis {
+  summary: string;
+  skills_gap: string[];
+  red_flags: string[];
+  highlights: string[];
 }
 
 interface Education {
@@ -49,7 +65,7 @@ interface Education {
 }
 
 interface Candidate {
-  id: number;
+  id: string; // Changed to string for MongoDB ObjectId
   name: string;
   email: string;
   phone: string;
@@ -59,6 +75,7 @@ interface Candidate {
   experienceDetails: ExperienceDetail[];
   matchScore: number;
   matchBreakdown: MatchBreakdown;
+  quick_analysis?: QuickAnalysis;
 }
 
 interface WeightItem {
@@ -77,7 +94,7 @@ interface Step {
 const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);
-  const [jdId, setJdId] = useState<number | null>(null);
+  const [jdId, setJdId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [shortlistedCandidates, setShortlistedCandidates] = useState<Candidate[]>([]);
@@ -92,8 +109,7 @@ const Index = () => {
   const steps: Step[] = [
     { id: 1, name: "Job Description", description: "Upload and analyze JD", status: jobDescription ? "complete" : "current" },
     { id: 2, name: "Candidate Matching", description: "Upload and score CVs", status: jobDescription && candidates.length > 0 ? "complete" : jobDescription ? "current" : "upcoming" },
-    { id: 3, name: "Insights", description: "Visualize matches and Analyze data", status: candidates.length > 0 ? "complete" : "upcoming" },
-    { id: 4, name: "Shortlist", description: "Select and contact and Send Emails", status: candidates.length > 0 ? "current" : "upcoming" }
+    { id: 3, name: "Shortlist", description: "Select and contact candidates", status: candidates.length > 0 ? "current" : "upcoming" },
   ];
 
   const initialWeights: WeightItem[] = [
@@ -104,8 +120,44 @@ const Index = () => {
     { name: "Team Leadership", weight: 60, category: "experience" },
     { name: "Years of Experience", weight: 70, category: "experience" },
     { name: "Computer Science Degree", weight: 50, category: "education" },
-    { name: "Industry Knowledge", weight: 65, category: "other" }
+    { name: "Industry Knowledge", weight: 65, category: "other" },
   ];
+
+  useEffect(() => {
+    const fetchLatestJD = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/jds');
+        const jds = response.data;
+        if (jds.length > 0) {
+          const latestJD = jds[0];
+          setJobDescription(latestJD);
+          setJdId(latestJD._id);
+          const cvResponse = await axios.get(`http://localhost:8000/api/cvs/${latestJD._id}`);
+          const formattedCandidates = cvResponse.data.map((cv: any) => ({
+            id: cv._id,
+            name: cv.name,
+            email: cv.email,
+            phone: cv.phone,
+            skills: cv.skills,
+            education: cv.education,
+            experience: cv.experience,
+            work_experience: cv.work_experience,
+            experienceDetails: cv.experience_details,
+            certifications: cv.certifications,
+            projects: cv.projects,
+            matchScore: cv.match_score,
+            matchBreakdown: cv.match_breakdown,
+            quick_analysis: cv.quick_analysis,
+          }));
+          setCandidates(formattedCandidates);
+          setFilteredCandidates(formattedCandidates);
+        }
+      } catch (error) {
+        console.error('Error fetching JDs or CVs:', error);
+      }
+    };
+    fetchLatestJD();
+  }, []);
 
   useEffect(() => {
     if (candidates.length > 0) {
@@ -120,7 +172,15 @@ const Index = () => {
     }
   }, [candidates, shortlistThreshold, sortOrder, shortlistView, shortlistedCandidates]);
 
-  const handleJdProcessed = (data: JobDescription, id: number) => {
+  const handleJdProcessed = async (data: JobDescription, id: string) => {
+    try {
+      await axios.delete(`http://localhost:8000/api/cvs/${id}`);
+      setCandidates([]);
+      setFilteredCandidates([]);
+      setShortlistedCandidates([]);
+    } catch (error) {
+      console.error('Error clearing CVs:', error);
+    }
     setJobDescription(data);
     setJdId(id);
   };
@@ -128,12 +188,10 @@ const Index = () => {
   const handleCVsProcessed = (data: { processed_cvs: Candidate[] }) => {
     console.log("Handling processed CVs:", data);
     if (data.processed_cvs && Array.isArray(data.processed_cvs)) {
-      setCandidates(data.processed_cvs);
-      setFilteredCandidates(data.processed_cvs);
+      setCandidates(prev => [...prev, ...data.processed_cvs]);
+      setFilteredCandidates(prev => [...prev, ...data.processed_cvs]);
     } else {
       console.warn("No valid candidates in response:", data);
-      setCandidates([]);
-      setFilteredCandidates([]);
     }
   };
 
@@ -143,7 +201,7 @@ const Index = () => {
     }
   };
 
-  const handleRemoveFromShortlist = (candidateId: number) => {
+  const handleRemoveFromShortlist = (candidateId: string) => {
     setShortlistedCandidates(shortlistedCandidates.filter(c => c.id !== candidateId));
   };
 
@@ -157,7 +215,7 @@ const Index = () => {
     document.documentElement.classList.toggle('dark');
   };
 
-  const handleWeightsChanged = (newWeights: WeightItem[]) => {
+  const handleWeightsChange = (newWeights: WeightItem[]) => {
     console.log("Weights updated:", newWeights);
   };
 
@@ -180,7 +238,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <SidebarNav pathname={location.pathname} />
+      <SidebarNav />
       <div className="flex-1 flex flex-col pl-64">
         <Header
           currentJobTitle={jobDescription ? jobDescription.title : "Upload a Job Description"}
@@ -225,7 +283,7 @@ const Index = () => {
                           <FeedbackTunerButton
                             weights={initialWeights}
                             jobTitle={jobDescription?.title || ""}
-                            onWeightsChanged={handleWeightsChanged}
+                            onWeightsChanged={handleWeightsChange}
                           />
                           <Button
                             variant="outline"
@@ -243,9 +301,17 @@ const Index = () => {
                           key={candidate.id}
                           candidate={candidate}
                           index={index}
-                          showActions={false} // No actions on Candidate Matching page
+                          showActions={false}
                         />
                       ))}
+                      <div className="mt-6 flex justify-end">
+                        <Button
+                          onClick={() => navigate('/shortlist')}
+                          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                        >
+                          View Shortlist
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4 animate-fade-in">
@@ -262,29 +328,6 @@ const Index = () => {
                     </div>
                   )
                 } />
-                <Route path="/insights" element={
-                  <div className="space-y-6">
-                    <div className="mb-6 flex justify-between items-end">
-                      <div>
-                        <h2 className="text-2xl font-bold mb-2">Visual Insights</h2>
-                        <p className="text-muted-foreground">
-                          Analytics and visualizations for {jobDescription?.title || "this job position"}
-                        </p>
-                      </div>
-                      <FeedbackTunerButton
-                        weights={initialWeights}
-                        jobTitle={jobDescription?.title || ""}
-                        onWeightsChanged={handleWeightsChanged}
-                      />
-                    </div>
-                    {candidates.length > 0 && jobDescription && (
-                      <VisualInsights
-                        candidates={candidates}
-                        jobSkills={jobDescription.skills}
-                      />
-                    )}
-                  </div>
-                } />
                 <Route path="/shortlist" element={
                   <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-start mb-6">
@@ -298,7 +341,7 @@ const Index = () => {
                         <FeedbackTunerButton
                           weights={initialWeights}
                           jobTitle={jobDescription?.title || ""}
-                          onWeightsChanged={handleWeightsChanged}
+                          onWeightsChanged={handleWeightsChange}
                         />
                         <Button
                           variant="outline"
@@ -376,8 +419,8 @@ const Index = () => {
                               <div className="border-t pt-4 mt-4">
                                 <h3 className="text-sm font-medium mb-2">Job Requirements</h3>
                                 <div className="flex flex-wrap gap-1.5">
-                                  {jobDescription.skills.map((skill, idx) => (
-                                    <Badge key={idx} variant="outline">{skill}</Badge>
+                                  {jobDescription.skills.map((skillObj, idx) => (
+                                    <Badge key={idx} variant="outline">{skillObj.skill}</Badge>
                                   ))}
                                 </div>
                               </div>
@@ -400,12 +443,12 @@ const Index = () => {
                                     : () => handleShortlistCandidate(candidate)
                                 }
                                 isShortlisted={shortlistedCandidates.some(c => c.id === candidate.id)}
-                                showActions={true} // Show actions on Shortlist page
+                                showActions={true}
                               />
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-12 bg-muted/20 rounded-lg border border-border">
+                          <div className="text-center py-12 bg-muted/20 rounded-lg border border-t">
                             <h3 className="text-lg font-medium mb-2">No candidates match the current criteria</h3>
                             <p className="text-muted-foreground mb-4">
                               Try adjusting the threshold or adding candidates to your shortlist

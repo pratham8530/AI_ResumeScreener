@@ -1,12 +1,13 @@
-import { FC, useState, useRef } from "react";
-import { Upload, FileText, X, CheckCircle, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { FC, useState, useRef } from 'react';
+import { Upload, FileText, X, CheckCircle, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+
 
 interface CVUploaderProps {
-  onCVsProcessed: (data: { processed_cvs: any[] }) => void;
-  jdId: number;
+  onCVsProcessed: (data: any) => void;
+  jdId: string;
 }
 
 const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
@@ -41,16 +42,16 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
 
   const handleFiles = (files: File[]) => {
     const validFiles = files.filter(file =>
-      file.type === "text/plain" ||
-      file.type === "application/pdf" ||
-      file.type.includes("document")
+      file.type === 'text/plain' ||
+      file.type === 'application/pdf' ||
+      file.type.includes('document')
     );
 
     if (validFiles.length !== files.length) {
       toast({
         title: "Some files were skipped",
         description: "Only text, PDF, or document files are supported.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
 
@@ -64,7 +65,7 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
   const clearAllFiles = () => {
     setUploadedFiles([]);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -79,12 +80,12 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
 
     const formData = new FormData();
     uploadedFiles.forEach(file => {
-      formData.append("files", file);
+      formData.append('files', file);
     });
 
     try {
-      const response = await fetch(`https://accenturehackathon-k0z4.onrender.com/process-cvs/${jdId}`, {
-        method: "POST",
+      const response = await fetch(`http://localhost:8000/api/process-cvs/${jdId}`, {
+        method: 'POST',
         body: formData,
       });
 
@@ -94,18 +95,16 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
       }
 
       const data = await response.json();
-      console.log("Full response from backend:", data); // Log full response
-      console.log("Received processed CVs from backend:", data.processed_cvs); // Debug log
       onCVsProcessed(data);
       toast({
         title: "CVs Processed",
         description: "Candidate CVs successfully analyzed.",
       });
     } catch (error: any) {
-      console.error("Error processing CVs:", error);
+      console.error('Error processing CVs:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to process the CVs. Please try again.",
+        description: error.message || 'Failed to process the CVs. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -120,8 +119,7 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
         <p className="text-muted-foreground">Upload candidate CVs to match against the job description</p>
       </div>
 
-      <Card
-        className={`border-2 border-dashed transition-all ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
+      <Card className={`border-2 border-dashed transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border'}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
