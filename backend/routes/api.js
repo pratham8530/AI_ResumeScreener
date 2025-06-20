@@ -17,6 +17,14 @@ const supportedTypes = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
+router.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 router.post('/process-jd', upload.single('file'), async (req, res) => {
   const { text } = req.body;
   const file = req.file;
