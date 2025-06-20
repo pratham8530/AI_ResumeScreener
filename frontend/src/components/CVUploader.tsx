@@ -92,7 +92,7 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId, onClose }) => {
     });
 
     try {
-      const response = await fetch(`http://localhost:8000/api/process-cvs/${jdId}`, {
+      const response = await fetch(`https://ai-resumescrenner.onrender.com/api/process-cvs/${jdId}`, {
         method: 'POST',
         body: formData,
       });

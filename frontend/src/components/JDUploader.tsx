@@ -97,7 +97,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/process-jd', {
+      const response = await fetch('https://ai-resumescrenner.onrender.com/api/process-jd', {
         method: 'POST',
         body: formData,
       });
