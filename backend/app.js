@@ -7,7 +7,7 @@ const apiRoutes = require('./routes/api');
 const app = express();
 
 app.use(cors({
-  origin: 'https://ai-resumescrenner.onrender.com',
+  origin: 'https://ai-resume-screnner.vercel.app',
   methods: ['GET', 'POST'],
   credentials: true,
 }));
