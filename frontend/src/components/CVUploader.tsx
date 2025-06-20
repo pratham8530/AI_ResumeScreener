@@ -95,6 +95,7 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId, onClose }) => {
       const response = await fetch(`https://ai-resumescrenner.onrender.com/api/process-cvs/${jdId}`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {

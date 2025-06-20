@@ -100,6 +100,7 @@ const JDUploader: FC<JDUploaderProps> = ({ onJdProcessed }) => {
       const response = await fetch('https://ai-resumescrenner.onrender.com/api/process-jd', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {

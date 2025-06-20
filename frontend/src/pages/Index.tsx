@@ -138,13 +138,17 @@ const Index = () => {
   useEffect(() => {
     const fetchLatestJD = async () => {
       try {
-        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/jds');
+        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/jds',{
+          withCredentials: true,
+        });
         const jds = response.data;
         if (jds.length > 0) {
           const latestJD = jds[0];
           setJobDescription(latestJD);
           setJdId(latestJD._id);
-          const cvResponse = await axios.get(`https://ai-resumescrenner.onrender.com/api/cvs/${latestJD._id}`);
+          const cvResponse = await axios.get(`https://ai-resumescrenner.onrender.com/api/cvs/${latestJD._id}`,{
+            withCredentials: true,
+          });
           const formattedCandidates = cvResponse.data.map((cv: any) => ({
             id: cv._id,
             name: cv.name,
@@ -174,7 +178,9 @@ const Index = () => {
 
     const fetchHRActivity = async () => {
       try {
-        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/hr-activity');
+        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/hr-activity',{
+          withCredentials: true,
+        });
         setHRActivityHistory(response.data);
       } catch (error) {
         console.error('Error fetching HR activity:', error);
@@ -192,7 +198,9 @@ const Index = () => {
 
   const handleJdProcessed = async (data: JobDescription, id: string) => {
     try {
-      await axios.delete(`https://ai-resumescrenner.onrender.com/api/cvs/${id}`);
+      await axios.delete(`https://ai-resumescrenner.onrender.com/api/cvs/${id}`,{
+        withCredentials: true,
+      });
       setCandidates([]);
       setFilteredCandidates([]);
       setShortlistedCandidates([]);
@@ -263,11 +271,11 @@ const Index = () => {
   const endScreeningSession = async () => {
     if (jobDescription && shortlistedCandidates.length > 0) {
       try {
-        await axios.post(`https://ai-resumescrenner.onrender.com/api/end-session/${jdId}`, { shortlistedCandidates });
+        await axios.post(`https://ai-resumescrenner.onrender.com/api/end-session/${jdId}`, { shortlistedCandidates },{ withCredentials: true });
         setCandidates([]);
         setFilteredCandidates([]);
         setShortlistedCandidates([]);
-        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/hr-activity');
+        const response = await axios.get('https://ai-resumescrenner.onrender.com/api/hr-activity',{ withCredentials: true });
         setHRActivityHistory(response.data);
         navigate("/shortlist");
       } catch (error) {

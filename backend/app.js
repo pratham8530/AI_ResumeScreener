@@ -8,24 +8,14 @@ const app = express();
 
 app.use(cors({
   origin: 'https://ai-resumescrenner.onrender.com',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.options('*', cors()); // Handle preflight
-
 app.use(express.json());
-
-// Log origin for debugging
-app.use((req, res, next) => {
-  console.log('Request Origin:', req.headers.origin);
-  next();
-});
-
 app.use('/api', apiRoutes);
 
-// Error handler
+// Global error handling middleware
 app.use((err, req, res, next) => {
   console.error('Global Error:', err.stack);
   res.status(500).json({ detail: `Internal server error: ${err.message}` });
