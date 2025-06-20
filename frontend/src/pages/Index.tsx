@@ -32,7 +32,7 @@ interface JobDescription {
   requirements: string[];
   keywords: string[];
   originalText: string;
-  _id: string; // Added for MongoDB ID
+  _id: string;
 }
 
 interface ExperienceDetail {
@@ -65,7 +65,7 @@ interface Education {
 }
 
 interface Candidate {
-  id: string; // Changed to string for MongoDB ObjectId
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -133,6 +133,7 @@ const Index = () => {
           setJobDescription(latestJD);
           setJdId(latestJD._id);
           const cvResponse = await axios.get(`http://localhost:8000/api/cvs/${latestJD._id}`);
+          console.log("Raw CV data:", cvResponse.data); // Debug API response
           const formattedCandidates = cvResponse.data.map((cv: any) => ({
             id: cv._id,
             name: cv.name,
@@ -145,10 +146,11 @@ const Index = () => {
             experienceDetails: cv.experience_details,
             certifications: cv.certifications,
             projects: cv.projects,
-            matchScore: cv.match_score,
+            matchScore: Number(cv.match_score) || 0, // Ensure matchScore is a number
             matchBreakdown: cv.match_breakdown,
             quick_analysis: cv.quick_analysis,
           }));
+          console.log("Formatted candidates:", formattedCandidates); // Debug formatted data
           setCandidates(formattedCandidates);
           setFilteredCandidates(formattedCandidates);
         }
@@ -161,16 +163,11 @@ const Index = () => {
 
   useEffect(() => {
     if (candidates.length > 0) {
-      const filtered = [...candidates].filter(c => {
-        if (shortlistView === "all") return true;
-        if (shortlistView === "auto") return c.matchScore >= shortlistThreshold;
-        if (shortlistView === "manual") return shortlistedCandidates.some(sc => sc.id === c.id);
-        return true;
-      });
-      const sorted = filtered.sort((a, b) => (sortOrder === "desc" ? b.matchScore - a.matchScore : a.matchScore - b.matchScore));
+      // Show all candidates, sorted by matchScore
+      const sorted = [...candidates].sort((a, b) => (sortOrder === "desc" ? b.matchScore - a.matchScore : a.matchScore - b.matchScore));
       setFilteredCandidates(sorted);
     }
-  }, [candidates, shortlistThreshold, sortOrder, shortlistView, shortlistedCandidates]);
+  }, [candidates, sortOrder]);
 
   const handleJdProcessed = async (data: JobDescription, id: string) => {
     try {
@@ -224,8 +221,15 @@ const Index = () => {
   };
 
   const autoShortlist = () => {
-    const autoShortlisted = candidates.filter(c => c.matchScore >= shortlistThreshold);
+    const autoShortlisted = candidates.filter(c => {
+      const score = Number(c.matchScore) * 100; // Convert decimal to percentage
+      console.log(`Checking candidate ${c.name}: matchScore=${score}%, threshold=${shortlistThreshold}`, score >= shortlistThreshold);
+      return score >= shortlistThreshold;
+    });
+    console.log("Candidates with matchScore >= threshold:", autoShortlisted);
     setShortlistedCandidates(autoShortlisted);
+    // Force re-render to ensure UI updates
+    setFilteredCandidates([...filteredCandidates]); // Trigger re-render
   };
 
   const emailAllShortlisted = () => {
@@ -403,14 +407,14 @@ const Index = () => {
                                 Auto-Shortlist Candidates
                               </Button>
                               <p className="text-xs text-muted-foreground mt-2">
-                                Will shortlist {candidates.filter(c => c.matchScore >= shortlistThreshold).length} candidates with {shortlistThreshold}%+ match
+                                Will shortlist {candidates.filter(c => Number(c.matchScore) * 100 >= shortlistThreshold).length} candidates with {shortlistThreshold}%+ match
                               </p>
                             </div>
                             <div className="pt-2">
                               <Tabs value={shortlistView} onValueChange={(value) => setShortlistView(value as "all" | "auto" | "manual")} className="w-full">
                                 <TabsList className="grid w-full grid-cols-3">
                                   <TabsTrigger value="all">All</TabsTrigger>
-                                  <TabsTrigger value="auto">Auto ({candidates.filter(c => c.matchScore >= shortlistThreshold).length})</TabsTrigger>
+                                  <TabsTrigger value="auto">Auto ({candidates.filter(c => Number(c.matchScore) * 100 >= shortlistThreshold).length})</TabsTrigger>
                                   <TabsTrigger value="manual">Manual ({shortlistedCandidates.length})</TabsTrigger>
                                 </TabsList>
                               </Tabs>
