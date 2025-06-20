@@ -7,7 +7,7 @@ const apiRoutes = require('./routes/api');
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:8080',
+  origin: 'https://ai-resumescrenner.onrender.com',
   methods: ['GET', 'POST'],
   credentials: true,
 }));
