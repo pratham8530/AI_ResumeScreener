@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { Edit2, Save, Sparkles } from 'lucide-react';
+import { Edit2, Save, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,9 +22,10 @@ interface JobDescription {
 interface JDPreviewCardProps {
   jobDescription: JobDescription;
   onEdit?: (jobDescription: JobDescription) => void;
+  onReset?: () => void; // New prop to handle reset
 }
 
-const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
+const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit, onReset }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(jobDescription.summary);
 
@@ -35,6 +36,12 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
         ...jobDescription,
         summary: editedSummary
       });
+    }
+  };
+
+  const handleReset = () => {
+    if (onReset) {
+      onReset();
     }
   };
 
@@ -63,10 +70,16 @@ const JDPreviewCard: FC<JDPreviewCardProps> = ({ jobDescription, onEdit }) => {
                   Save
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={handleReset}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Reset
+                  </Button>
+                </>
               )}
             </div>
           </div>

@@ -7,6 +7,7 @@ const { calculateMatchScore } = require('../utils/scoring');
 const { extractText } = require('../middleware/fileHandler');
 const JobDescription = require('../models/JobDescription');
 const CV = require('../models/CV');
+const HRActivity = require('../models/HRActivity');
 
 const supportedTypes = [
   'text/plain',
@@ -82,7 +83,6 @@ router.post('/process-cvs/:jdId', upload.array('files'), async (req, res) => {
       }
       const scores = calculateMatchScore(jd, cvData);
       const matchScore = scores.overall_match / 100;
-      console.log('Calculated Scores:', scores);
       const matchBreakdown = {
         skills: scores.skills_match,
         experience: scores.experience_relevance,
@@ -98,10 +98,10 @@ router.post('/process-cvs/:jdId', upload.array('files'), async (req, res) => {
         jd_id: jdId,
         match_score: matchScore,
         match_breakdown: matchBreakdown,
-        quick_analysis: scores.quick_analysis, // Include quick_analysis
+        quick_analysis: scores.quick_analysis,
       });
       await cv.save();
-      console.log('Saved CV:', cv); // Debug saved CV
+      console.log('Saved CV:', cv);
 
       processedCVs.push({
         id: cv._id,
@@ -117,13 +117,46 @@ router.post('/process-cvs/:jdId', upload.array('files'), async (req, res) => {
         projects: cvData.projects,
         matchScore: matchScore,
         matchBreakdown,
-        quick_analysis: scores.quick_analysis, // Include in response
+        quick_analysis: scores.quick_analysis,
       });
     }
 
     res.json({ processed_cvs: processedCVs, success: true });
   } catch (error) {
     console.error('Error processing CVs:', error.message);
+    res.status(500).json({ detail: `Internal server error: ${error.message}` });
+  }
+});
+
+router.post('/end-session/:jdId', async (req, res) => {
+  const { jdId } = req.params;
+  const { shortlistedCandidates } = req.body;
+
+  try {
+    const jd = await JobDescription.findById(jdId);
+    if (!jd) return res.status(404).json({ detail: 'JD not found' });
+
+    const newActivity = new HRActivity({
+      jdId,
+      jobTitle: jd.title,
+      shortlistedCandidates,
+      date: new Date().toISOString().split('T')[0],
+    });
+    await newActivity.save();
+
+    res.json({ success: true, message: 'Session ended and history saved' });
+  } catch (error) {
+    console.error('Error ending session:', error.message);
+    res.status(500).json({ detail: `Internal server error: ${error.message}` });
+  }
+});
+
+router.get('/hr-activity', async (req, res) => {
+  try {
+    const activities = await HRActivity.find();
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching HR activity:', error.message);
     res.status(500).json({ detail: `Internal server error: ${error.message}` });
   }
 });

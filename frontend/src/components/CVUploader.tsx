@@ -1,21 +1,29 @@
-import { FC, useState, useRef } from 'react';
+import { FC, useState, useRef, useEffect } from 'react';
 import { Upload, FileText, X, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 
-
 interface CVUploaderProps {
   onCVsProcessed: (data: any) => void;
   jdId: string;
+  onClose: () => void; // New prop to handle closing
 }
 
-const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
+const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId, onClose }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Reset uploadedFiles when the component is shown
+  useEffect(() => {
+    setUploadedFiles([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [jdId]); // Reset when jdId changes or component is remounted
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -109,6 +117,8 @@ const CVUploader: FC<CVUploaderProps> = ({ onCVsProcessed, jdId }) => {
       });
     } finally {
       setIsProcessing(false);
+      clearAllFiles(); // Clear files after processing
+      onClose(); // Hide uploader after processing
     }
   };
 

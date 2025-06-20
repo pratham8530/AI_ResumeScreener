@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import SidebarNav from "@/components/SidebarNav";
 import Header from "@/components/Header";
@@ -12,12 +12,13 @@ import CandidateCard from "@/components/CandidateCard";
 import EmailModal from "@/components/EmailModal";
 import FeedbackTunerButton from "@/components/FeedbackTunerButton";
 import Settings from "./Settings";
+import PastHRActivity from "@/components/PastHRActivity";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Filter, ArrowUpDown, Download } from "lucide-react";
+import { Mail, Filter, ArrowUpDown, Download, Upload as UploadIcon } from "lucide-react";
 
 interface Skill {
   skill: string;
@@ -76,6 +77,15 @@ interface Candidate {
   matchScore: number;
   matchBreakdown: MatchBreakdown;
   quick_analysis?: QuickAnalysis;
+  currentStatus?: string;
+}
+
+interface HRActivity {
+  _id: string;
+  jdId: string;
+  jobTitle: string;
+  shortlistedCandidates: Candidate[];
+  date: string;
 }
 
 interface WeightItem {
@@ -103,6 +113,8 @@ const Index = () => {
   const [shortlistThreshold, setShortlistThreshold] = useState(75);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [shortlistView, setShortlistView] = useState<"all" | "auto" | "manual">("all");
+  const [hrActivityHistory, setHRActivityHistory] = useState<HRActivity[]>([]);
+  const [showCVUploader, setShowCVUploader] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -133,7 +145,6 @@ const Index = () => {
           setJobDescription(latestJD);
           setJdId(latestJD._id);
           const cvResponse = await axios.get(`http://localhost:8000/api/cvs/${latestJD._id}`);
-          console.log("Raw CV data:", cvResponse.data); // Debug API response
           const formattedCandidates = cvResponse.data.map((cv: any) => ({
             id: cv._id,
             name: cv.name,
@@ -146,24 +157,34 @@ const Index = () => {
             experienceDetails: cv.experience_details,
             certifications: cv.certifications,
             projects: cv.projects,
-            matchScore: Number(cv.match_score) || 0, // Ensure matchScore is a number
+            matchScore: Number(cv.match_score) || 0,
             matchBreakdown: cv.match_breakdown,
             quick_analysis: cv.quick_analysis,
+            currentStatus: cv.current_status || "Pending",
           }));
-          console.log("Formatted candidates:", formattedCandidates); // Debug formatted data
           setCandidates(formattedCandidates);
           setFilteredCandidates(formattedCandidates);
+          setShowCVUploader(false);
         }
       } catch (error) {
         console.error('Error fetching JDs or CVs:', error);
       }
     };
     fetchLatestJD();
+
+    const fetchHRActivity = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/hr-activity');
+        setHRActivityHistory(response.data);
+      } catch (error) {
+        console.error('Error fetching HR activity:', error);
+      }
+    };
+    fetchHRActivity();
   }, []);
 
   useEffect(() => {
     if (candidates.length > 0) {
-      // Show all candidates, sorted by matchScore
       const sorted = [...candidates].sort((a, b) => (sortOrder === "desc" ? b.matchScore - a.matchScore : a.matchScore - b.matchScore));
       setFilteredCandidates(sorted);
     }
@@ -182,11 +203,20 @@ const Index = () => {
     setJdId(id);
   };
 
+  const resetJd = () => {
+    setJobDescription(null);
+    setJdId(null);
+    setCandidates([]);
+    setFilteredCandidates([]);
+    setShortlistedCandidates([]);
+  };
+
   const handleCVsProcessed = (data: { processed_cvs: Candidate[] }) => {
-    console.log("Handling processed CVs:", data);
     if (data.processed_cvs && Array.isArray(data.processed_cvs)) {
-      setCandidates(prev => [...prev, ...data.processed_cvs]);
-      setFilteredCandidates(prev => [...prev, ...data.processed_cvs]);
+      const newCandidates = data.processed_cvs.filter(newCand => !candidates.some(c => c.id === newCand.id));
+      setCandidates(prev => [...prev, ...newCandidates]);
+      setFilteredCandidates(prev => [...prev, ...newCandidates]);
+      setShowCVUploader(false);
     } else {
       console.warn("No valid candidates in response:", data);
     }
@@ -221,15 +251,29 @@ const Index = () => {
   };
 
   const autoShortlist = () => {
-    const autoShortlisted = candidates.filter(c => {
-      const score = Number(c.matchScore) * 100; // Convert decimal to percentage
-      console.log(`Checking candidate ${c.name}: matchScore=${score}%, threshold=${shortlistThreshold}`, score >= shortlistThreshold);
-      return score >= shortlistThreshold;
+    const autoShortlisted = candidates.filter(c => Number(c.matchScore) * 100 >= shortlistThreshold);
+    autoShortlisted.forEach(candidate => {
+      console.log(`Checking candidate ${candidate.name}: matchScore=${Number(candidate.matchScore) * 100}%, threshold=${shortlistThreshold}`, Number(candidate.matchScore) * 100 >= shortlistThreshold);
     });
     console.log("Candidates with matchScore >= threshold:", autoShortlisted);
     setShortlistedCandidates(autoShortlisted);
-    // Force re-render to ensure UI updates
-    setFilteredCandidates([...filteredCandidates]); // Trigger re-render
+    setFilteredCandidates([...filteredCandidates]);
+  };
+
+  const endScreeningSession = async () => {
+    if (jobDescription && shortlistedCandidates.length > 0) {
+      try {
+        await axios.post(`http://localhost:8000/api/end-session/${jdId}`, { shortlistedCandidates });
+        setCandidates([]);
+        setFilteredCandidates([]);
+        setShortlistedCandidates([]);
+        const response = await axios.get('http://localhost:8000/api/hr-activity');
+        setHRActivityHistory(response.data);
+        navigate("/shortlist");
+      } catch (error) {
+        console.error('Error ending session:', error);
+      }
+    }
   };
 
   const emailAllShortlisted = () => {
@@ -238,6 +282,10 @@ const Index = () => {
 
   const proceedToCandidateMatching = () => {
     navigate("/candidates");
+  };
+
+  const toggleCVUploader = () => {
+    setShowCVUploader(prev => !prev);
   };
 
   return (
@@ -256,80 +304,139 @@ const Index = () => {
               <Routes>
                 <Route path="/" element={
                   jobDescription ? (
-                    <div className="space-y-4 animate-fade-in">
-                      <JDPreviewCard jobDescription={jobDescription} />
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-6"
+                    >
+                      <JDPreviewCard jobDescription={jobDescription} onReset={resetJd} />
                       <div className="mt-6 flex justify-end">
                         <Button
                           onClick={proceedToCandidateMatching}
-                          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                         >
                           Proceed to Candidate Matching
                         </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="space-y-4 animate-fade-in">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-6"
+                    >
                       <JDUploader onJdProcessed={handleJdProcessed} />
-                    </div>
+                    </motion.div>
                   )
                 } />
                 <Route path="/candidates" element={
-                  candidates.length > 0 ? (
+                  jobDescription ? (
                     <div className="animate-fade-in space-y-6">
-                      <div className="mb-6 flex justify-between items-end">
-                        <div>
-                          <h2 className="text-2xl font-bold mb-2">Candidate Matches</h2>
-                          <p className="text-muted-foreground">
-                            Found {candidates.length} potential matches for {jobDescription?.title}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <FeedbackTunerButton
-                            weights={initialWeights}
-                            jobTitle={jobDescription?.title || ""}
-                            onWeightsChanged={handleWeightsChange}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={toggleSortOrder}
-                            className="flex items-center gap-1"
-                          >
-                            <ArrowUpDown className="h-4 w-4" />
-                            {sortOrder === "desc" ? "Highest First" : "Lowest First"}
-                          </Button>
-                        </div>
-                      </div>
-                      {filteredCandidates.map((candidate, index) => (
-                        <CandidateCard
-                          key={candidate.id}
-                          candidate={candidate}
-                          index={index}
-                          showActions={false}
-                        />
-                      ))}
-                      <div className="mt-6 flex justify-end">
-                        <Button
-                          onClick={() => navigate('/shortlist')}
-                          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                      {candidates.length === 0 && jdId && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="text-center"
                         >
-                          View Shortlist
-                        </Button>
-                      </div>
+                          <CVUploader onCVsProcessed={handleCVsProcessed} jdId={jdId} onClose={() => setShowCVUploader(false)} />
+                        </motion.div>
+                      )}
+                      {candidates.length > 0 && (
+                        <>
+                          <div className="mb-6 flex justify-between items-end">
+                            <div>
+                              <h2 className="text-2xl font-bold mb-2">Candidate Matches</h2>
+                              <p className="text-muted-foreground">
+                                Found {candidates.length} potential matches for {jobDescription?.title}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <FeedbackTunerButton
+                                weights={initialWeights}
+                                jobTitle={jobDescription?.title || ""}
+                                onWeightsChanged={handleWeightsChange}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleSortOrder}
+                                className="flex items-center gap-1"
+                              >
+                                <ArrowUpDown className="h-4 w-4" />
+                                {sortOrder === "desc" ? "Highest First" : "Lowest First"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleCVUploader}
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-1"
+                              >
+                                <UploadIcon className="h-4 w-4" />
+                                Upload More CVs
+                              </Button>
+                            </div>
+                          </div>
+                          {showCVUploader && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="text-center"
+                            >
+                              <CVUploader onCVsProcessed={handleCVsProcessed} jdId={jdId} onClose={() => setShowCVUploader(false)} />
+                            </motion.div>
+                          )}
+                          {filteredCandidates.map((candidate, index) => (
+                            <CandidateCard
+                              key={candidate.id}
+                              candidate={candidate}
+                              index={index}
+                              showActions={false}
+                            />
+                          ))}
+                          <div className="mt-6 flex justify-end">
+                            <Button
+                              onClick={() => navigate('/shortlist')}
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                            >
+                              View Shortlist
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
-                    <div className="space-y-4 animate-fade-in">
-                      {jdId ? (
-                        <CVUploader onCVsProcessed={handleCVsProcessed} jdId={jdId} />
-                      ) : (
-                        <p>Please upload a job description first.</p>
-                      )}
-                      {jdId && candidates.length === 0 && (
-                        <p className="text-center text-muted-foreground">
-                          No candidates processed yet. Upload CVs to see matches.
-                        </p>
-                      )}
-                    </div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-6"
+                    >
+                      <Card className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+                        <CardHeader>
+                          <CardTitle className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+                            Start with a Job Description
+                          </CardTitle>
+                          <CardDescription className="text-gray-600 dark:text-gray-400">
+                            Please upload a job description to begin the candidate matching process.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex justify-center items-center h-full">
+                          <Button
+                            onClick={() => navigate('/')}
+                            className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                          >
+                            <UploadIcon className="h-5 w-5" />
+                            Upload Job Description
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
                   )
                 } />
                 <Route path="/shortlist" element={
@@ -461,8 +568,18 @@ const Index = () => {
                         )}
                       </div>
                     </div>
+                    <div className="mt-6 flex justify-end">
+                      <Button
+                        onClick={endScreeningSession}
+                        disabled={shortlistedCandidates.length === 0}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                      >
+                        End Screening Session
+                      </Button>
+                    </div>
                   </div>
                 } />
+                <Route path="/past-hr-activity" element={<PastHRActivity hrActivityHistory={hrActivityHistory} />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </AnimatePresence>

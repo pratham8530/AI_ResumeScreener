@@ -39,6 +39,12 @@ const SidebarNav: FC<SidebarNavProps> = ({ pathname: propPathname }) => {
       active: currentPathname === "/shortlist",
     },
     {
+      name: "Past HR Activity",
+      path: "/past-hr-activity",
+      icon: <FileText className="h-5 w-5" />,
+      active: currentPathname === "/past-hr-activity",
+    },
+    {
       name: "Settings",
       path: "/settings",
       icon: <Settings className="h-5 w-5" />,
