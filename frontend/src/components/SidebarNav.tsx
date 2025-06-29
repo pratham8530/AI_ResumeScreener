@@ -57,7 +57,7 @@ const SidebarNav: FC<SidebarNavProps> = ({ pathname: propPathname }) => {
       <div className="p-6">
         <h1 className="text-xl font-bold text-sidebar-foreground flex items-center">
           <span className="bg-accent text-accent-foreground rounded-md p-1 mr-2">AI</span>
-          Recruitment Assistant
+          SmartRecruit AI
         </h1>
       </div>
 
